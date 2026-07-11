@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Namaz Vakti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e1a;
+    --surface:#121729;
+    --surface-2:#1a2138;
+    --border:rgba(201,168,106,0.16);
+    --gold:#c9a86a;
+    --gold-bright:#e6c98a;
+    --green:#2f6d55;
+    --text:#f2ede1;
+    --text-dim:#8c93a8;
+    --danger:#c9705f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; height:100%;}
+  body{
+    background:
+      radial-gradient(circle at 50% -10%, rgba(201,168,106,0.10), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding-bottom:84px;
+  }
+
+  /* Decorative geometric star pattern overlay */
+  .pattern{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:0.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='none' stroke='%23c9a86a' stroke-width='1'%3E%3Cpath d='M30 2 L36 24 L58 30 L36 36 L30 58 L24 36 L2 30 L24 24 Z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size:60px 60px;
+    z-index:0;
+  }
+
+  header{
+    padding:28px 22px 14px;
+    position:relative;
+    z-index:1;
+  }
+  .top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+  }
+  .brand{
+    font-family:'Amiri', serif;
+    font-size:26px;
+    letter-spacing:0.5px;
+    color:var(--gold-bright);
+  }
+  .location-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-size:12.5px;
+    padding:7px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .location-btn:active{ background:var(--surface-2); }
+  .dates{
+    margin-top:10px;
+    color:var(--text-dim);
+    font-size:13px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .dates b{ color:var(--text); font-weight:500; }
+
+  /* Arch / mihrab hero */
+  .arch-wrap{
+    position:relative;
+    z-index:1;
+    margin:8px 22px 0;
+  }
+  .arch{
+    background:linear-gradient(180deg, var(--surface-2), var(--surface));
+    border:1px solid var(--border);
+    border-radius:140px 140px 18px 18px;
+    padding:38px 20px 26px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .arch::before{
+    content:"";
+    position:absolute;
+    top:-40%;
+    left:50%;
+    transform:translateX(-50%);
+    width:220px;
+    height:220px;
+    background:radial-gradient(circle, rgba(201,168,106,0.16), transparent 70%);
+  }
+  .next-label{
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    position:relative;
+  }
+  .next-name{
+    font-family:'Amiri', serif;
+    font-size:34px;
+    color:var(--gold-bright);
+    margin-top:4px;
+    position:relative;
+  }
+  .countdown{
+    font-family:'Amiri', serif;
+    font-size:44px;
+    margin-top:10px;
+    color:var(--text);
+    position:relative;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown-sub{
+    font-size:12px;
+    color:var(--text-dim);
+    margin-top:4px;
+    position:relative;
+  }
+  .arc-ring{
+    margin-top:16px;
+    position:relative;
+  }
+
+  /* Divider */
+  .divider{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:26px 22px 12px;
+    color:var(--text-dim);
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+  }
+  .divider::before, .divider::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--border);
+  }
+  .divider svg{ flex-shrink:0; }
+
+  /* Prayer list */
+  .list{
+    position:relative;
+    z-index:1;
+    padding:0 22px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+  }
+  .row.active{
+    border-color:var(--gold);
+    background:linear-gradient(90deg, rgba(201,168,106,0.10), var(--surface));
+  }
+  .row .name-wrap{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--text-dim);
+  }
+  .row.active .dot{ background:var(--gold-bright); box-shadow:0 0 8px var(--gold); }
+  .row .name{ font-size:15px; }
+  .row.active .name{ color:var(--gold-bright); font-weight:600; }
+  .row .time{ font-size:16px; font-variant-numeric: tabular-nums; }
+  .row.passed .name, .row.passed .time{ color:var(--text-dim); }
+
+  /* Calendar view */
+  .cal-list{
+    position:relative;
+    z-index:1;
+    padding:18px 22px 0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .cal-row{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .cal-row.today{ border-color:var(--gold); }
+  .cal-day{
+    font-family:'Amiri', serif;
+    font-size:20px;
+    color:var(--gold-bright);
+    width:32px;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .cal-times{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 12px;
+    font-size:12px;
+    color:var(--text-dim);
+  }
+  .cal-times b{ color:var(--text); font-weight:500; }
+  .cal-header{
+    font-family:'Amiri', serif;
+    font-size:20px;
+    color:var(--gold-bright);
+    padding:20px 22px 4px;
+    position:relative;
+    z-index:1;
+  }
+
+  /* City picker modal */
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6);
+    display:none; align-items:flex-end; justify-content:center;
+    z-index:20;
+  }
+  .modal-bg.open{ display:flex; }
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px 20px 0 0;
+    width:100%; max-width:480px;
+    max-height:70vh;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .modal h3{
+    font-family:'Amiri', serif;
+    color:var(--gold-bright);
+    margin:0 0 12px;
+    font-size:20px;
+  }
+  .modal input{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:10px;
+    font-size:14px;
+    margin-bottom:10px;
+    font-family:'Inter',sans-serif;
+  }
+  .modal .city-list{
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+  }
+  .modal .city-item{
+    padding:11px 6px;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    font-size:14.5px;
+    cursor:pointer;
+  }
+  .modal .city-item:active{ color:var(--gold-bright); }
+  .modal .close-btn{
+    margin-top:12px;
+    text-align:center;
+    color:var(--text-dim);
+    font-size:13px;
+    padding:8px;
+  }
+
+  /* Bottom nav */
+  nav{
+    position:fixed;
+    bottom:0; left:0; right:0;
+    display:flex;
+    justify-content:center;
+    z-index:15;
+  }
+  .nav-inner{
+    width:100%; max-width:480px;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    display:flex;
+    padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+  .nav-btn{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    color:var(--text-dim);
+    background:none;
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    padding:6px 0;
+    cursor:pointer;
+  }
+  .nav-btn.active{ color:var(--gold-bright); }
+  .nav-btn svg{ width:20px; height:20px; }
+
+  .hint{
+    margin:14px 22px 0;
+    font-size:12px;
+    color:var(--text-dim);
+    line-height:1.5;
+    text-align:center;
+  }
+  .status{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:13px;
+    padding:40px 22px;
+  }
+  .view{ display:none; }
+  .view.active{ display:block; }
+</style>
+</head>
+<body>
+<div class="pattern"></div>
+<div class="app">
+
+  <header>
+    <div class="top-row">
+      <div class="brand">Namaz Vakti</div>
+      <button class="location-btn" id="locationBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span id="locationLabel">Konum seç</span>
+      </button>
+    </div>
+    <div class="dates" id="dateLine">Yükleniyor…</div>
+  </header>
+
+  <!-- TODAY VIEW -->
+  <section class="view active" id="view-today">
+    <div class="arch-wrap">
+      <div class="arch">
+        <div class="next-label">Sıradaki vakit</div>
+        <div class="next-name" id="nextName">—</div>
+        <div class="countdown" id="countdown">--:--:--</div>
+        <div class="countdown-sub" id="countdownSub">kalan süre</div>
+      </div>
+    </div>
+
+    <div class="divider">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.4"><path d="M12 2 L14.5 9.5 L22 12 L14.5 14.5 L12 22 L9.5 14.5 L2 12 L9.5 9.5 Z"/></svg>
+      bugünün vakitleri
+    </div>
+
+    <div class="list" id="todayList">
+      <div class="status">Vakitler yükleniyor…</div>
+    </div>
+
+    <div class="hint" id="notifHint"></div>
+  </section>
+
+  <!-- CALENDAR VIEW -->
+  <section class="view" id="view-calendar">
+    <div class="cal-header" id="calHeader">Bu Ay</div>
+    <div class="cal-list" id="calList">
+      <div class="status">Takvim yükleniyor…</div>
+    </div>
+  </section>
+
+  <!-- SETTINGS / NOTIFICATIONS VIEW -->
+  <section class="view" id="view-settings">
+    <div class="cal-header">Ayarlar</div>
+    <div class="list" style="margin-top:6px;">
+      <div class="row" style="cursor:pointer;" id="notifRow">
+        <div class="name-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="name" id="notifStatus">Bildirimleri Etkinleştir</span>
+        </div>
+        <span style="color:var(--text-dim); font-size:18px;">›</span>
+      </div>
+      <div class="row" style="cursor:pointer;" id="methodRow">
+        <div class="name-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <span class="name">Hesaplama Yöntemi</span>
+        </div>
+        <span style="color:var(--text-dim); font-size:13px;">Diyanet</span>
+      </div>
+    </div>
+    <div class="hint">Diyanet İşleri Başkanlığı hesaplama yöntemi kullanılıyor. Vakitler Aladhan API üzerinden alınmaktadır.</div>
+    <div class="hint" style="margin-top:18px;">Bildirimler yalnızca bu sayfa tarayıcıda açıkken çalışır. En iyi sonuç için uygulamayı ana ekranınıza ekleyin ve arka planda açık tutun.</div>
+  </section>
+
+  <nav>
+    <div class="nav-inner">
+      <button class="nav-btn active" data-view="today">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+        Bugün
+      </button>
+      <button class="nav-btn" data-view="calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        Bu Ay
+      </button>
+      <button class="nav-btn" data-view="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Ayarlar
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- City picker -->
+<div class="modal-bg" id="cityModalBg">
+  <div class="modal">
+    <h3>Şehir Seç</h3>
+    <input type="text" id="citySearch" placeholder="Şehir ara...">
+    <div class="city-list" id="cityList"></div>
+    <div class="close-btn" id="closeModal">Kapat</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const PRAYER_KEYS = ['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'];
+  const PRAYER_LABELS = {Fajr:'İmsak', Sunrise:'Güneş', Dhuhr:'Öğle', Asr:'İkindi', Maghrib:'Akşam', Isha:'Yatsı'};
+  const CITIES = ["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin",
+    "Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale",
+    "Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep",
+    "Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman",
+    "Kars","Kastamonu","Kayseri","Kilis","Kırıkkale","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya",
+    "Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Siirt",
+    "Sinop","Sivas","Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"];
+
+  const METHOD = 13; // Diyanet İşleri Başkanlığı
+  let mode = null; // 'coords' | 'city'
+  let coords = null;
+  let cityName = null;
+  let todayTimings = null;
+  let tomorrowFajr = null;
+  let hijriToday = null;
+  let countdownTimer = null;
+  let notifTimeouts = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- View switching ----------
+  document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      btn.classList.add('active');
+      $('view-'+btn.dataset.view).classList.add('active');
+      if(btn.dataset.view === 'calendar' && coords){ loadCalendar(); }
+    });
+  });
+
+  // ---------- City modal ----------
+  function renderCityList(filter=''){
+    const list = $('cityList');
+    list.innerHTML = '';
+    CITIES.filter(c => c.toLocaleLowerCase('tr').includes(filter.toLocaleLowerCase('tr'))).forEach(c=>{
+      const el = document.createElement('div');
+      el.className = 'city-item';
+      el.textContent = c;
+      el.addEventListener('click', ()=>{
+        selectCity(c);
+        $('cityModalBg').classList.remove('open');
+      });
+      list.appendChild(el);
+    });
+  }
+  $('locationBtn').addEventListener('click', ()=>{
+    $('cityModalBg').classList.add('open');
+    renderCityList();
+    $('citySearch').value='';
+    $('citySearch').focus();
+  });
+  $('closeModal').addEventListener('click', ()=> $('cityModalBg').classList.remove('open'));
+  $('cityModalBg').addEventListener('click', (e)=>{ if(e.target.id==='cityModalBg') $('cityModalBg').classList.remove('open'); });
+  $('citySearch').addEventListener('input', (e)=> renderCityList(e.target.value));
+
+  // Add a "GPS kullan" option at top of the modal dynamically
+  (function addGpsOption(){
+    const modal = document.querySelector('.modal');
+    const gpsBtn = document.createElement('div');
+    gpsBtn.className = 'city-item';
+    gpsBtn.style.color = '#e6c98a';
+    gpsBtn.textContent = '📍 Konumumu otomatik bul (GPS)';
+    gpsBtn.addEventListener('click', ()=>{
+      $('cityModalBg').classList.remove('open');
+      useGPS();
+    });
+    modal.insertBefore(gpsBtn, $('citySearch'));
+  })();
+
+  function useGPS(){
+    $('locationLabel').textContent = 'Bulunuyor…';
+    if(!navigator.geolocation){
+      alert('Bu tarayıcı konum servisini desteklemiyor. Lütfen şehir seçin.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(pos=>{
+      mode = 'coords';
+      coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      cityName = null;
+      $('locationLabel').textContent = 'Konumum';
+      loadToday();
+    }, err=>{
+      $('locationLabel').textContent = 'Konum seç';
+      alert('Konum alınamadı. Lütfen manuel olarak şehir seçin.');
+    }, { timeout: 10000 });
+  }
+
+  function selectCity(c){
+    mode = 'city';
+    cityName = c;
+    coords = null;
+    $('locationLabel').textContent = c;
+    loadToday();
+  }
+
+  // ---------- API ----------
+  async function apiTimingsForDate(dateObj){
+    const dd = String(dateObj.getDate()).padStart(2,'0');
+    const mm = String(dateObj.getMonth()+1).padStart(2,'0');
+    const yyyy = dateObj.getFullYear();
+    const dateStr = `${dd}-${mm}-${yyyy}`;
+    let url;
+    if(mode === 'coords'){
+      url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${coords.lat}&longitude=${coords.lng}&method=${METHOD}`;
+    } else {
+      url = `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(cityName)}&country=Turkey&method=${METHOD}`;
+    }
+    const res = await fetch(url);
+    const json = await res.json();
+    if(json.code !== 200) throw new Error('API hatası');
+    return json.data;
+  }
+
+  async function apiCalendar(year, month){
+    let url;
+    if(mode === 'coords'){
+      url = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${coords.lat}&longitude=${coords.lng}&method=${METHOD}`;
+    } else {
+      url = `https://api.aladhan.com/v1/calendarByCity/${year}/${month}?city=${encodeURIComponent(cityName)}&country=Turkey&method=${METHOD}`;
+    }
+    const res = await fetch(url);
+    const json = await res.json();
+    if(json.code !== 200) throw new Error('API hatası');
+    return json.data;
+  }
+
+  // ---------- Today view ----------
+  async function loadToday(){
+    $('todayList').innerHTML = '<div class="status">Vakitler yükleniyor…</div>';
+    try{
+      const now = new Date();
+      const data = await apiTimingsForDate(now);
+      todayTimings = data.timings;
+      hijriToday = data.date.hijri;
+
+      // fetch tomorrow's Fajr for after-Isha countdown
+      const tmr = new Date(now); tmr.setDate(tmr.getDate()+1);
+      try{
+        const dataT = await apiTimingsForDate(tmr);
+        tomorrowFajr = dataT.timings.Fajr;
+      }catch(e){ tomorrowFajr = todayTimings.Fajr; }
+
+      renderDateLine(now);
+      renderTodayList();
+      startCountdown();
+      maybeScheduleNotifications();
+    }catch(e){
+      $('todayList').innerHTML = '<div class="status">Vakitler alınamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.</div>';
+    }
+  }
+
+  function cleanTime(t){ return t.split(' ')[0]; }
+
+  function renderDateLine(now){
+    const days = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+    const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    const g = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    let h = '';
+    if(hijriToday){ h = `${hijriToday.day} ${hijriToday.month.en} ${hijriToday.year}`; }
+    $('dateLine').innerHTML = `<b>${g}</b> ${h ? ' · '+h+' H.' : ''}`;
+  }
+
+  function renderTodayList(){
+    const list = $('todayList');
+    list.innerHTML = '';
+    const now = new Date();
+    PRAYER_KEYS.forEach(key=>{
+      const timeStr = cleanTime(todayTimings[key]);
+      const [h,m] = timeStr.split(':').map(Number);
+      const t = new Date(now); t.setHours(h, m, 0, 0);
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.id = 'row-'+key;
+      if(t < now) row.classList.add('passed');
+      row.innerHTML = `
+        <div class="name-wrap"><span class="dot"></span><span class="name">${PRAYER_LABELS[key]}</span></div>
+        <span class="time">${timeStr}</span>`;
+      list.appendChild(row);
+    });
+  }
+
+  function getScheduleForCountdown(){
+    // returns sorted list of {key,label,date} for today + tomorrow's Fajr
+    const now = new Date();
+    const items = PRAYER_KEYS.map(key=>{
+      const [h,m] = cleanTime(todayTimings[key]).split(':').map(Number);
+      const d = new Date(now); d.setHours(h,m,0,0);
+      return { key, label: PRAYER_LABELS[key], date: d };
+    });
+    const [th,tm] = cleanTime(tomorrowFajr).split(':').map(Number);
+    const tf = new Date(now); tf.setDate(tf.getDate()+1); tf.setHours(th,tm,0,0);
+    items.push({ key:'FajrTomorrow', label:'İmsak', date: tf });
+    return items;
+  }
+
+  function startCountdown(){
+    if(countdownTimer) clearInterval(countdownTimer);
+    const tick = ()=>{
+      const now = new Date();
+      const items = getScheduleForCountdown();
+      let next = items.find(i => i.date > now);
+      if(!next) next = items[items.length-1];
+
+      const prevIndex = items.indexOf(next) - 1;
+      const prevDate = prevIndex >= 0 ? items[prevIndex].date : new Date(now.getTime() - 6*3600*1000);
+
+      const diff = next.date - now;
+      const hh = String(Math.floor(diff/3600000)).padStart(2,'0');
+      const mm = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
+      const ss = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+      $('nextName').textContent = next.label;
+      $('countdown').textContent = `${hh}:${mm}:${ss}`;
+      $('countdownSub').textContent = 'vaktine kalan süre';
+
+      // refresh passed styling
+      document.querySelectorAll('.row').forEach(r=>{
+        r.classList.remove('passed','active');
+      });
+      PRAYER_KEYS.forEach(key=>{
+        const row = $('row-'+key);
+        if(!row) return;
+        const item = items.find(i=>i.key===key);
+        if(item && item.date <= now) row.classList.add('passed');
+        if(item === next && next.key !== 'FajrTomorrow') row.classList.add('active');
+      });
+
+      // if day rolled over, reload
+      if(now.getHours()===0 && now.getMinutes()===0 && now.getSeconds()<2){
+        loadToday();
+      }
+    };
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  // ---------- Calendar view ----------
+  async function loadCalendar(){
+    $('calList').innerHTML = '<div class="status">Takvim yükleniyor…</div>';
+    const now = new Date();
+    const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    $('calHeader').textContent = `${months[now.getMonth()]} ${now.getFullYear()}`;
+    try{
+      const data = await apiCalendar(now.getFullYear(), now.getMonth()+1);
+      const list = $('calList');
+      list.innerHTML = '';
+      const todayNum = now.getDate();
+      data.forEach(dayData=>{
+        const dayNum = parseInt(dayData.date.gregorian.day, 10);
+        const row = document.createElement('div');
+        row.className = 'cal-row' + (dayNum===todayNum ? ' today' : '');
+        row.innerHTML = `
+          <div class="cal-day">${dayNum}</div>
+          <div class="cal-times">
+            <span>İmsak <b>${cleanTime(dayData.timings.Fajr)}</b></span>
+            <span>Öğle <b>${cleanTime(dayData.timings.Dhuhr)}</b></span>
+            <span>İkindi <b>${cleanTime(dayData.timings.Asr)}</b></span>
+            <span>Akşam <b>${cleanTime(dayData.timings.Maghrib)}</b></span>
+            <span>Yatsı <b>${cleanTime(dayData.timings.Isha)}</b></span>
+          </div>`;
+        list.appendChild(row);
+      });
+    }catch(e){
+      $('calList').innerHTML = '<div class="status">Takvim alınamadı.</div>';
+    }
+  }
+
+  // ---------- Notifications ----------
+  function updateNotifUI(){
+    const el = $('notifStatus');
+    if(!('Notification' in window)){
+      el.textContent = 'Bu tarayıcı desteklemiyor';
+      return;
+    }
+    if(Notification.permission === 'granted') el.textContent = 'Bildirimler Açık ✓';
+    else if(Notification.permission === 'denied') el.textContent = 'Bildirimler Engellendi';
+    else el.textContent = 'Bildirimleri Etkinleştir';
+  }
+  $('notifRow').addEventListener('click', async ()=>{
+    if(!('Notification' in window)) return;
+    if(Notification.permission === 'default'){
+      await Notification.requestPermission();
+      updateNotifUI();
+      maybeScheduleNotifications();
+    }
+  });
+
+  function maybeScheduleNotifications(){
+    notifTimeouts.forEach(t=>clearTimeout(t));
+    notifTimeouts = [];
+    if(!('Notification' in window) || Notification.permission !== 'granted' || !todayTimings) return;
+    const now = new Date();
+    PRAYER_KEYS.filter(k=>k!=='Sunrise').forEach(key=>{
+      const [h,m] = cleanTime(todayTimings[key]).split(':').map(Number);
+      const t = new Date(now); t.setHours(h,m,0,0);
+      const delay = t - now;
+      if(delay > 0 && delay < 24*3600*1000){
+        const id = setTimeout(()=>{
+          new Notification('Namaz Vakti', { body: `${PRAYER_LABELS[key]} vakti girdi.` });
+        }, delay);
+        notifTimeouts.push(id);
+      }
+    });
+    $('notifHint').textContent = 'Bugün için hatırlatmalar ayarlandı. Sayfa açık kaldığı sürece bildirim alacaksınız.';
+  }
+
+  updateNotifUI();
+
+  // ---------- Init ----------
+  // Try GPS automatically on first load; user can override via location button
+  useGPS();
+
+})();
+</script>
+</body>
+</html>
