@@ -1,4 +1,4 @@
-const CACHE_NAME = 'namaz-vakti-v3';
+const CACHE_NAME = 'namaz-vakti-v4';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
