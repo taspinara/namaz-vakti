@@ -48,10 +48,11 @@
     width:100%;
     max-width:480px;
     min-height:100vh;
+    min-height:100dvh;
     display:flex;
     flex-direction:column;
     position:relative;
-    padding-bottom:84px;
+    padding-bottom:calc(100px + env(safe-area-inset-bottom));
   }
 
   /* Decorative geometric star pattern overlay */
@@ -187,6 +188,7 @@
     position:relative;
     z-index:1;
     padding:0 22px;
+    margin-bottom:16px;
     display:flex;
     flex-direction:column;
     gap:10px;
@@ -223,7 +225,7 @@
   .cal-list{
     position:relative;
     z-index:1;
-    padding:18px 22px 0;
+    padding:18px 22px 16px;
     display:flex;
     flex-direction:column;
     gap:8px;
@@ -456,7 +458,7 @@
 <div class="modal-bg" id="cityModalBg">
   <div class="modal">
     <h3>Şehir Seç</h3>
-    <input type="text" id="citySearch" placeholder="Şehir ara...">
+    <input type="text" id="citySearch" placeholder="Şehir veya ülke ara...">
     <div class="city-list" id="cityList"></div>
     <div class="close-btn" id="closeModal">Kapat</div>
   </div>
@@ -466,18 +468,58 @@
 (function(){
   const PRAYER_KEYS = ['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'];
   const PRAYER_LABELS = {Fajr:'İmsak', Sunrise:'Güneş', Dhuhr:'Öğle', Asr:'İkindi', Maghrib:'Akşam', Isha:'Yatsı'};
-  const CITIES = ["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin",
+  // Türkiye: 81 il. country -> Aladhan API'ye gönderilen İngilizce ülke adı.
+  const TR_CITIES = ["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin",
     "Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale",
     "Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep",
     "Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman",
     "Kars","Kastamonu","Kayseri","Kilis","Kırıkkale","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya",
     "Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Siirt",
-    "Sinop","Sivas","Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"];
+    "Sinop","Sivas","Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"]
+    .map(name => ({ name, country: "Turkey", countryTr: "Türkiye" }));
+
+  // Avrupa: Türk nüfusunun yoğun olduğu ülkeler öncelikli, büyük şehirler.
+  const EUROPE_CITIES = [
+    ["Berlin","Germany","Almanya"], ["Munich","Germany","Almanya"], ["Hamburg","Germany","Almanya"],
+    ["Cologne","Germany","Almanya"], ["Frankfurt","Germany","Almanya"], ["Stuttgart","Germany","Almanya"],
+    ["Duisburg","Germany","Almanya"], ["Essen","Germany","Almanya"], ["Dortmund","Germany","Almanya"],
+    ["Düsseldorf","Germany","Almanya"], ["Bremen","Germany","Almanya"], ["Hanover","Germany","Almanya"],
+    ["Nuremberg","Germany","Almanya"], ["Mannheim","Germany","Almanya"], ["Wuppertal","Germany","Almanya"],
+    ["Paris","France","Fransa"], ["Marseille","France","Fransa"], ["Lyon","France","Fransa"],
+    ["Strasbourg","France","Fransa"], ["Toulouse","France","Fransa"], ["Lille","France","Fransa"],
+    ["Amsterdam","Netherlands","Hollanda"], ["Rotterdam","Netherlands","Hollanda"], ["The Hague","Netherlands","Hollanda"],
+    ["Utrecht","Netherlands","Hollanda"], ["Eindhoven","Netherlands","Hollanda"],
+    ["Brussels","Belgium","Belçika"], ["Antwerp","Belgium","Belçika"], ["Ghent","Belgium","Belçika"],
+    ["Vienna","Austria","Avusturya"], ["Graz","Austria","Avusturya"], ["Linz","Austria","Avusturya"], ["Salzburg","Austria","Avusturya"],
+    ["Zurich","Switzerland","İsviçre"], ["Geneva","Switzerland","İsviçre"], ["Basel","Switzerland","İsviçre"], ["Bern","Switzerland","İsviçre"],
+    ["London","United Kingdom","İngiltere"], ["Birmingham","United Kingdom","İngiltere"], ["Manchester","United Kingdom","İngiltere"],
+    ["Leeds","United Kingdom","İngiltere"], ["Bradford","United Kingdom","İngiltere"], ["Glasgow","United Kingdom","İngiltere"],
+    ["Stockholm","Sweden","İsveç"], ["Gothenburg","Sweden","İsveç"], ["Malmo","Sweden","İsveç"],
+    ["Oslo","Norway","Norveç"], ["Bergen","Norway","Norveç"],
+    ["Copenhagen","Denmark","Danimarka"], ["Aarhus","Denmark","Danimarka"],
+    ["Helsinki","Finland","Finlandiya"],
+    ["Rome","Italy","İtalya"], ["Milan","Italy","İtalya"], ["Naples","Italy","İtalya"], ["Turin","Italy","İtalya"],
+    ["Madrid","Spain","İspanya"], ["Barcelona","Spain","İspanya"], ["Valencia","Spain","İspanya"],
+    ["Warsaw","Poland","Polonya"], ["Krakow","Poland","Polonya"],
+    ["Athens","Greece","Yunanistan"], ["Thessaloniki","Greece","Yunanistan"],
+    ["Sofia","Bulgaria","Bulgaristan"], ["Plovdiv","Bulgaria","Bulgaristan"],
+    ["Bucharest","Romania","Romanya"],
+    ["Vienna","Austria","Avusturya"],
+    ["Dublin","Ireland","İrlanda"],
+    ["Lisbon","Portugal","Portekiz"],
+    ["Prague","Czechia","Çekya"],
+    ["Budapest","Hungary","Macaristan"],
+    ["Moscow","Russia","Rusya"], ["Sarajevo","Bosnia and Herzegovina","Bosna Hersek"],
+    ["Skopje","North Macedonia","Kuzey Makedonya"], ["Pristina","Kosovo","Kosova"], ["Tirana","Albania","Arnavutluk"]
+  ].map(([name,country,countryTr]) => ({ name, country, countryTr }));
+
+  const CITIES = [...TR_CITIES, ...EUROPE_CITIES];
 
   const METHOD = 13; // Diyanet İşleri Başkanlığı
   let mode = null; // 'coords' | 'city'
   let coords = null;
   let cityName = null;
+  let cityCountry = 'Turkey';
   let todayTimings = null;
   let tomorrowFajr = null;
   let hijriToday = null;
@@ -501,16 +543,25 @@
   function renderCityList(filter=''){
     const list = $('cityList');
     list.innerHTML = '';
-    CITIES.filter(c => c.toLocaleLowerCase('tr').includes(filter.toLocaleLowerCase('tr'))).forEach(c=>{
-      const el = document.createElement('div');
-      el.className = 'city-item';
-      el.textContent = c;
-      el.addEventListener('click', ()=>{
-        selectCity(c);
-        $('cityModalBg').classList.remove('open');
+    const f = filter.toLocaleLowerCase('tr');
+    CITIES.filter(c => c.name.toLocaleLowerCase('tr').includes(f) || c.countryTr.toLocaleLowerCase('tr').includes(f))
+      .forEach(c=>{
+        const el = document.createElement('div');
+        el.className = 'city-item';
+        el.textContent = c.country === 'Turkey' ? c.name : `${c.name} (${c.countryTr})`;
+        el.addEventListener('click', ()=>{
+          selectCity(c);
+          $('cityModalBg').classList.remove('open');
+        });
+        list.appendChild(el);
       });
-      list.appendChild(el);
-    });
+    if(list.children.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'city-item';
+      empty.style.color = 'var(--text-dim)';
+      empty.textContent = 'Şehir bulunamadı. GPS ile de konumunu bulabilirsin.';
+      list.appendChild(empty);
+    }
   }
   $('locationBtn').addEventListener('click', ()=>{
     $('cityModalBg').classList.add('open');
@@ -556,9 +607,10 @@
 
   function selectCity(c){
     mode = 'city';
-    cityName = c;
+    cityName = c.name;
+    cityCountry = c.country;
     coords = null;
-    $('locationLabel').textContent = c;
+    $('locationLabel').textContent = c.country === 'Turkey' ? c.name : `${c.name}, ${c.countryTr}`;
     loadToday();
   }
 
@@ -572,7 +624,7 @@
     if(mode === 'coords'){
       url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${coords.lat}&longitude=${coords.lng}&method=${METHOD}`;
     } else {
-      url = `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(cityName)}&country=Turkey&method=${METHOD}`;
+      url = `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(cityName)}&country=${encodeURIComponent(cityCountry)}&method=${METHOD}`;
     }
     const res = await fetch(url);
     const json = await res.json();
@@ -585,7 +637,7 @@
     if(mode === 'coords'){
       url = `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${coords.lat}&longitude=${coords.lng}&method=${METHOD}`;
     } else {
-      url = `https://api.aladhan.com/v1/calendarByCity/${year}/${month}?city=${encodeURIComponent(cityName)}&country=Turkey&method=${METHOD}`;
+      url = `https://api.aladhan.com/v1/calendarByCity/${year}/${month}?city=${encodeURIComponent(cityName)}&country=${encodeURIComponent(cityCountry)}&method=${METHOD}`;
     }
     const res = await fetch(url);
     const json = await res.json();
