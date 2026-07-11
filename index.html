@@ -67,7 +67,7 @@
   }
 
   header{
-    padding:28px 22px 14px;
+    padding:calc(28px + env(safe-area-inset-top)) 22px 14px;
     position:relative;
     z-index:1;
   }
@@ -365,6 +365,41 @@
   }
   .view{ display:none; }
   .view.active{ display:block; }
+
+  /* Update available banner */
+  #updateBanner{
+    position:fixed;
+    top:calc(14px + env(safe-area-inset-top));
+    left:50%;
+    transform:translateX(-50%);
+    z-index:30;
+    background:var(--surface-2);
+    border:1px solid var(--gold);
+    color:var(--text);
+    padding:10px 10px 10px 16px;
+    border-radius:30px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    animation:slideDown 0.35s ease;
+  }
+  #updateBanner button{
+    background:var(--gold);
+    color:var(--bg);
+    border:none;
+    padding:7px 14px;
+    border-radius:20px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  @keyframes slideDown{
+    from{ opacity:0; transform:translate(-50%, -14px); }
+    to{ opacity:1; transform:translate(-50%, 0); }
+  }
 </style>
 </head>
 <body>
@@ -830,10 +865,47 @@
   // Try GPS automatically on first load; user can override via location button
   useGPS();
 
-  // Register service worker so the browser treats this as an installable app
+  // Register service worker + detect new versions and prompt the user to update
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
-      navigator.serviceWorker.register('sw.js').catch(()=>{});
+      navigator.serviceWorker.register('sw.js').then(reg=>{
+        // A new service worker was found and is installing
+        reg.addEventListener('updatefound', ()=>{
+          const newWorker = reg.installing;
+          if(!newWorker) return;
+          newWorker.addEventListener('statechange', ()=>{
+            // 'installed' + an existing controller means this is an UPDATE, not the first install
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+              showUpdateBanner(newWorker);
+            }
+          });
+        });
+        // Check for updates every time the app is opened/resumed
+        reg.update().catch(()=>{});
+        document.addEventListener('visibilitychange', ()=>{
+          if(document.visibilityState === 'visible') reg.update().catch(()=>{});
+        });
+      }).catch(()=>{});
+
+      // When the new service worker takes control, reload once to show fresh content
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+        if(refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    });
+  }
+
+  function showUpdateBanner(newWorker){
+    if($('updateBanner')) return; // already shown
+    const bar = document.createElement('div');
+    bar.id = 'updateBanner';
+    bar.innerHTML = `<span>Yeni sürüm mevcut</span><button id="updateBtn">Güncelle</button>`;
+    document.body.appendChild(bar);
+    $('updateBtn').addEventListener('click', ()=>{
+      newWorker.postMessage('SKIP_WAITING');
+      bar.querySelector('span').textContent = 'Güncelleniyor…';
     });
   }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'namaz-vakti-v2';
+const CACHE_NAME = 'namaz-vakti-v3';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
@@ -10,7 +10,16 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
-  self.skipWaiting();
+  // NOTE: no self.skipWaiting() here on purpose — the new version waits
+  // until the user taps "Güncelle" in the app, so it never switches
+  // versions on someone mid-use without their say-so.
+});
+
+// The page sends this when the user taps the "Güncelle" button
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {
